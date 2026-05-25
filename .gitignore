@@ -17,3 +17,6 @@ supabase/.temp
 # OS
 .DS_Store
 Thumbs.db
+
+# Markdown files
+*.md
