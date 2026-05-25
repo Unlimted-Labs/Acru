@@ -1,0 +1,6 @@
+# Supabase project configuration
+# Run `supabase init` to populate this file with your project credentials.
+# See: https://supabase.com/docs/guides/cli/config
+
+[project]
+# project_id = "your-project-id"
