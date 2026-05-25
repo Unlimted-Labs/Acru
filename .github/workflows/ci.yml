@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared package
+        run: pnpm --filter @acru/shared build
+
+      - name: Lint API
+        run: pnpm --filter api lint
+
+      - name: Lint Web
+        run: pnpm --filter web lint
+
+      - name: Type-check Web
+        run: pnpm --filter web type-check
+
+      - name: Test API
+        run: pnpm --filter api test
+        env:
+          NODE_ENV: test
+
+      # Move contract build check (no deploy)
+      - name: Setup Sui CLI
+        run: |
+          curl -fsSL https://github.com/MystenLabs/sui/releases/download/testnet-v1.39.3/sui-testnet-v1.39.3-ubuntu-x86_64.tgz | tar -xz
+          mv sui-testnet-v1.39.3-ubuntu-x86_64/sui /usr/local/bin/sui
+        continue-on-error: true
+
+      - name: Build Move contracts
+        run: cd contracts && sui move build
+        continue-on-error: true
+
+      - name: Build Web
+        run: pnpm --filter web build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001
+          NEXT_PUBLIC_SUI_NETWORK: testnet
+          NEXT_PUBLIC_ACRU_PACKAGE_ID: '0x0000000000000000000000000000000000000000000000000000000000000000'
+          NEXT_PUBLIC_WALRUS_AGGREGATOR_URL: https://aggregator.walrus-testnet.walrus.space
